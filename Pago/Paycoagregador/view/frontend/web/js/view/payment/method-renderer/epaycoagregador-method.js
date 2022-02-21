@@ -107,9 +107,6 @@ define(
                                key: window.checkoutConfig.payment.epaycoagregador.payco_public_key,
                                test:test2
                            })
-                           var taxes = 0;
-                           taxes = totals._latestValue.base_tax_amount
-                           taxes = ''+taxes;
                            var items = '';
                            for(var i = 0; i <  window.checkoutConfig.quoteItemData.length; i++){
                                if(window.checkoutConfig.totalsData.items.length==1){
@@ -123,10 +120,6 @@ define(
                            var mobile = '';
                            var doc= '';
                            var country = '';
-                           //calcular base iva
-                           var tax_base = 0;
-                           tax_base = totals._latestValue.base_subtotal_with_discount;
-                           tax_base = ''+tax_base;
                            // fin calcular base iva
                            if(!window.checkoutConfig.isCustomerLoggedIn){
                                if(customerData){
@@ -145,9 +138,13 @@ define(
                            var lang = '';
                            var temp = window.checkoutConfig.payment.epaycoagregador.language.split("_");
                            lang = temp[0];
-                           var amount = '';
+                           
+                           var amount = 0;
                            amount = totals._latestValue.base_grand_total;
-
+                           var taxes = 0;
+                           taxes = totals._latestValue.base_tax_amount;
+                           var tax_base = 0;
+                           tax_base = amount - taxes;
                            var data={
                                //Parametros compra (obligatorio)
                                name: items,
