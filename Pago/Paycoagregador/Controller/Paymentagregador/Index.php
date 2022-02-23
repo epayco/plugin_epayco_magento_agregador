@@ -76,6 +76,7 @@ class Index extends \Magento\Framework\App\Action\Action
     {
         $result = $this->resultJsonFactory->create();
         $orderId = $_REQUEST['order_id'];
+        $sku_products = array();
 
         if(isset($orderId)){
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
@@ -85,13 +86,34 @@ class Index extends \Magento\Framework\App\Action\Action
                 $sql = "SELECT * FROM sales_order WHERE quote_id = '$orderId_'";
                 $result_ = $connection->fetchAll($sql);
                 if($result_ != null){
-                    return $result->setData($result_[0]);
+                    $algo = $result_[0]['quote_id'];
+                    $sqlQuote = "SELECT sku FROM quote_item WHERE quote_id = ' $algo '";
+                    $quote_data_ = $connection->fetchAll($sqlQuote);
+                    if($quote_data_ != null){
+                        foreach($quote_data_ as $sku){
+                             $sku_ = $sku["sku"];
+                             $sql_ = "SELECT sku,quantity FROM inventory_reservation WHERE sku = '$sku_' ORDER BY reservation_id ASC";  
+                             $query_ = $connection->fetchAll($sql_);
+                             if($query_ != null){
+                                 foreach($query_ as $productInventory){
+                                    $sku_products[] =$productInventory;
+                                 }
+                             }
+                        }
+                    }
+                    if($sku_products > 0){
+                        $producto_inventory=  $sku_products;
+                    }else{
+                        $producto_inventory = null;
+                    }
+                    return $result->setData([$result_[0], $producto_inventory]);
+                    
                 }else{
-                    return $result->setData('warning' );
+                    return $result->setData(['warning'] );
                 }
 
         } else {
-                return $result->setData('error');
+                return $result->setData(['error']);
         }
 
     }

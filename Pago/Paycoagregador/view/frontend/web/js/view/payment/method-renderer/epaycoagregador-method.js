@@ -87,15 +87,38 @@ define(
                         console.log('processing...');
                         if(data == "warning" || data.length == 0 || data == "error" ) {
                             $.ajax(settings).done(function (response) {
-                                if( response.increment_id){
-                                    invoice = response.increment_id;
+                                if( response[0].increment_id){
+                                    invoice = response[0].increment_id;
+                                    var skuProduct= response[1];
+                                    var sku_;
+                                    var productData = [];
+                                    for (var i = 0; i < skuProduct.length; i++) {
+                                     sku_ = skuProduct[i].sku;
+                                     const resultado = skuProduct.find( producto => producto.sku === sku_ );
+                                     const busqueda = productData.find( producto => producto.sku === sku_ );
+                                        if(!busqueda){
+                                            productData.push(resultado)
+                                        }
+                                    }
                                 }
                             });
                         }else{
-                            invoice = data.increment_id;
+                            invoice = data[0].increment_id;
+                            var skuProduct= data[1];
+                            var sku_;
+                            var productData = [];
+                            for (var i = 0; i < skuProduct.length; i++) {
+                                sku_ = skuProduct[i].sku;
+                                const resultado = skuProduct.find( producto => producto.sku === sku_ );
+                                const busqueda = productData.find( producto => producto.sku === sku_ );
+                                if(!busqueda){
+                                    productData.push(resultado)
+                                }
+                            }
                         }
 
                        if(invoice){
+                            var order_data_product = JSON.stringify(productData)
                            if(window.checkoutConfig.payment.epaycoagregador.payco_test == "1"){
                                window.checkoutConfig.payment.epaycoagregador.payco_test= "true";
                                var test2 = true;
@@ -152,8 +175,8 @@ define(
                                invoice: invoice,
                                currency: window.checkoutConfig.quoteData.store_currency_code,
                                amount: amount,
-                               tax_base: tax_base.replace('.',','),
-                               tax: taxes.replace('.',','),
+                               tax_base: tax_base,
+                               tax: taxes,
                                country: country,
                                lang: lang,
                                //Onpage='false' - Standard='true'
@@ -161,6 +184,7 @@ define(
                                //Atributos opcionales
                                extra1: orderId,
                                extra2: invoice,
+                               extra3:order_data_product,
                                confirmation:url.build("confirmationAgregador/epaycoagregador/index"),
                                response: url.build("confirmationAgregador/epaycoagregador/index"),
                                //Atributos cliente
