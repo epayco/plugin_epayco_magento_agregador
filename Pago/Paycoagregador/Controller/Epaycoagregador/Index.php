@@ -117,12 +117,14 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                 $orderId = (Integer)$dataTransaction->data->x_extra1;
                 $code = $dataTransaction->data->x_cod_response;
                 $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id',$orderId);
-
+                $code = $dataTransaction->data->x_extra4;
                 if($code == 1){
-                    if($order->getState() != "canceled"  ){
-                        $order->setState(Order::STATE_PROCESSING, true);
-                        $order->setStatus(Order::STATE_PROCESSING, true);
+                    if($order->getState() == "canceled"  ){
+                        $this->uploadInventory($orderId,$x_extra4);
                     }
+                    $order->setState(Order::STATE_PROCESSING, true);
+                    $order->setStatus(Order::STATE_PROCESSING, true);
+                    
                 } else if($code == 3){
                     $order->setState($pendingOrderState, true);
                     $order->setStatus($pendingOrderState, true);
@@ -174,6 +176,7 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
             $x_signature = trim($_REQUEST['x_signature']);
             $x_extra1 = trim($_REQUEST['x_extra1']);
             $x_extra2 = trim($_REQUEST['x_extra2']);
+            $x_extra4 = trim($_REQUEST['x_extra4']);
             $x_currency_code = trim($_REQUEST['x_currency_code']);
             $x_transaction_id = trim($_REQUEST['x_transaction_id']);
             $x_cod_transaction_state =trim($_REQUEST['x_cod_transaction_state']);
@@ -217,10 +220,12 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                 $code = (Integer)$x_cod_transaction_state;
 
                 if($code == 1){
-                    if($order->getState() != "canceled"  ){
+                    if($order->getState() == "canceled"  ){
+                        $this->uploadInventory($orderId,$x_extra4);
+                    }
                         $order->setState(Order::STATE_PROCESSING, true);
                         $order->setStatus(Order::STATE_PROCESSING, true);
-                    }
+                    
                 } else if($code == 3){
                     $order->setState($pendingOrderState, true);
                     $order->setStatus($pendingOrderState, true);
@@ -266,28 +271,51 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
         }
     }
 
-    public function uploadInventory($orderId){
+    public function uploadInventory($orderId, $confirmation=false){
+        if(!$confirmation){
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
         $connection = $resource->getConnection();
         $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id',$orderId);
         $sql = "SELECT sku FROM quote_item WHERE quote_id = '$orderId'";
         $result = $connection->fetchAll($sql);
-        if($result != null){
-            foreach($result as $sku){
-                $sku  = $sku["sku"];
+            if($result != null){
+                foreach($result as $sku){
+                    $sku  = $sku["sku"];
+                    $sql_ = "SELECT MAX(reservation_id),sku,quantity FROM inventory_reservation WHERE sku = '$sku' ORDER BY reservation_id ASC";  
+                    $query = $connection->fetchAll($sql_);
+                    if($query != null){
+                        foreach($query as $productInventory){
+                            $queryUpload = $connection->update(
+                                'inventory_reservation',
+                                ['quantity' => '0.0000'],
+                                ['reservation_id = ?' => $productInventory["MAX(reservation_id)"]]
+                            );
+                        }
+                    }
+                }
+            }
+        }else{
+            
+            foreach(json_decode($confirmation) as $sku => $value){
+                $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+                $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+                $connection = $resource->getConnection();
+                $sku  = $value->sku;
+                $quantity = $value->quantity;
                 $sql_ = "SELECT MAX(reservation_id),sku,quantity FROM inventory_reservation WHERE sku = '$sku' ORDER BY reservation_id ASC";  
                 $query = $connection->fetchAll($sql_);
                 if($query != null){
                     foreach($query as $productInventory){
-                        $queryUpload = $connection->update(
-                            'inventory_reservation',
-                            ['quantity' => '0.0000'],
-                            ['reservation_id = ?' => $productInventory["MAX(reservation_id)"]]
-                        );
+                            $queryUpload = $connection->update(
+                                'inventory_reservation',
+                                ['quantity' => $quantity],
+                                ['reservation_id = ?' => $productInventory["MAX(reservation_id)"]]
+                            );
                     }
                 }
             }
+   
         }
     }
 

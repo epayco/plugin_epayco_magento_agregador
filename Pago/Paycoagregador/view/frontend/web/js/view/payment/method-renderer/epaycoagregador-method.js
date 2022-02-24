@@ -90,30 +90,30 @@ define(
                                 if( response[0].increment_id){
                                     invoice = response[0].increment_id;
                                     var skuProduct= response[1];
-                                    var sku_;
-                                    var productData = [];
-                                    for (var i = 0; i < skuProduct.length; i++) {
-                                     sku_ = skuProduct[i].sku;
-                                     const resultado = skuProduct.find( producto => producto.sku === sku_ );
-                                     const busqueda = productData.find( producto => producto.sku === sku_ );
-                                        if(!busqueda){
-                                            productData.push(resultado)
-                                        }
+                                    if(skuProduct){
+                                       for (var i = 0; i < skuProduct.length; i++) {
+                                         sku_ = skuProduct[i].sku;
+                                         const resultado = skuProduct.find( producto => producto.sku === sku_ );
+                                         const busqueda = productData.find( producto => producto.sku === sku_ );
+                                            if(!busqueda){
+                                                productData.push(resultado)
+                                            }
+                                        } 
                                     }
                                 }
                             });
                         }else{
                             invoice = data[0].increment_id;
                             var skuProduct= data[1];
-                            var sku_;
-                            var productData = [];
-                            for (var i = 0; i < skuProduct.length; i++) {
-                                sku_ = skuProduct[i].sku;
-                                const resultado = skuProduct.find( producto => producto.sku === sku_ );
-                                const busqueda = productData.find( producto => producto.sku === sku_ );
-                                if(!busqueda){
-                                    productData.push(resultado)
-                                }
+                            if(skuProduct){
+                                for (var i = 0; i < skuProduct.length; i++) {
+                                    sku_ = skuProduct[i].sku;
+                                    const resultado = skuProduct.find( producto => producto.sku === sku_ );
+                                    const busqueda = productData.find( producto => producto.sku === sku_ );
+                                    if(!busqueda){
+                                            productData.push(resultado)
+                                        }
+                                    } 
                             }
                         }
 
@@ -184,7 +184,8 @@ define(
                                //Atributos opcionales
                                extra1: orderId,
                                extra2: invoice,
-                               extra3:order_data_product,
+                               extra3: productData,
+                               extra4: order_data_product,
                                confirmation:url.build("confirmationAgregador/epaycoagregador/index"),
                                response: url.build("confirmationAgregador/epaycoagregador/index"),
                                //Atributos cliente
