@@ -58,6 +58,8 @@ define(
                 var totals = quote.getTotals();
                 var quoteIdData = this.getQuoteIdData();
                 var invoice;
+                var sku_;
+                var productData = [];
                 var settings = {
                     "url": url.build("responseAgregador/paymentagregador/index"),
                     "method": "POST",
