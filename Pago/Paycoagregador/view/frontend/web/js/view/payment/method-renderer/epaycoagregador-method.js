@@ -58,6 +58,8 @@ define(
                 var totals = quote.getTotals();
                 var quoteIdData = this.getQuoteIdData();
                 var invoice;
+                var sku_;
+                var productData = [];
                 var settings = {
                     "url": url.build("responseAgregador/paymentagregador/index"),
                     "method": "POST",
@@ -99,7 +101,7 @@ define(
                                                 productData.push(resultado)
                                             }
                                         } 
-                                    }
+                                    }    
                                 }
                             });
                         }else{
@@ -118,7 +120,7 @@ define(
                         }
 
                        if(invoice){
-                            var order_data_product = JSON.stringify(productData)
+                           var order_data_product = JSON.stringify(productData);
                            if(window.checkoutConfig.payment.epaycoagregador.payco_test == "1"){
                                window.checkoutConfig.payment.epaycoagregador.payco_test= "true";
                                var test2 = true;

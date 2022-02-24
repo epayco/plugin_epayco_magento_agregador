@@ -117,14 +117,14 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                 $orderId = (Integer)$dataTransaction->data->x_extra1;
                 $code = $dataTransaction->data->x_cod_response;
                 $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id',$orderId);
-                $code = $dataTransaction->data->x_extra4;
+                $x_extra4 = $dataTransaction->data->x_extra4;
                 if($code == 1){
                     if($order->getState() == "canceled"  ){
                         $this->uploadInventory($orderId,$x_extra4);
                     }
                     $order->setState(Order::STATE_PROCESSING, true);
                     $order->setStatus(Order::STATE_PROCESSING, true);
-                    
+
                 } else if($code == 3){
                     $order->setState($pendingOrderState, true);
                     $order->setStatus($pendingOrderState, true);
@@ -220,11 +220,11 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                 $code = (Integer)$x_cod_transaction_state;
 
                 if($code == 1){
-                    if($order->getState() == "canceled"  ){
+                     if($order->getState() == "canceled"  ){
                         $this->uploadInventory($orderId,$x_extra4);
                     }
-                        $order->setState(Order::STATE_PROCESSING, true);
-                        $order->setStatus(Order::STATE_PROCESSING, true);
+                    $order->setState(Order::STATE_PROCESSING, true);
+                    $order->setStatus(Order::STATE_PROCESSING, true);
                     
                 } else if($code == 3){
                     $order->setState($pendingOrderState, true);
@@ -271,14 +271,14 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
         }
     }
 
-    public function uploadInventory($orderId, $confirmation=false){
-        if(!$confirmation){
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
-        $connection = $resource->getConnection();
-        $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id',$orderId);
-        $sql = "SELECT sku FROM quote_item WHERE quote_id = '$orderId'";
-        $result = $connection->fetchAll($sql);
+    public function uploadInventory($orderId,$confirmation=false){
+         if(!$confirmation){
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
+            $connection = $resource->getConnection();
+            $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id',$orderId);
+            $sql = "SELECT sku FROM quote_item WHERE quote_id = '$orderId'";
+            $result = $connection->fetchAll($sql);
             if($result != null){
                 foreach($result as $sku){
                     $sku  = $sku["sku"];
@@ -295,8 +295,7 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                     }
                 }
             }
-        }else{
-            
+         }else{
             foreach(json_decode($confirmation) as $sku => $value){
                 $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
                 $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
@@ -315,7 +314,6 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                     }
                 }
             }
-   
         }
     }
 
