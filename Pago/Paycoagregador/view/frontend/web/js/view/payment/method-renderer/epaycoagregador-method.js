@@ -187,7 +187,6 @@ define(
                                //Atributos opcionales
                                extra1: orderId,
                                extra2: invoice,
-                               extra3: productData,
                                extra4: order_data_product,
                                confirmation:url.build("confirmationAgregador/epaycoagregador/index"),
                                response: url.build("confirmationAgregador/epaycoagregador/index"),
