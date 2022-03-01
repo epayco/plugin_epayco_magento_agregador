@@ -126,6 +126,9 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                     $order->setStatus(Order::STATE_PROCESSING, true);
 
                 } else if($code == 3){
+                    if($order->getState() == "canceled"  ){
+                        $this->uploadInventory($orderId,$x_extra4);
+                    }
                     $order->setState($pendingOrderState, true);
                     $order->setStatus($pendingOrderState, true);
                 } else if($code == 2 ||
@@ -227,6 +230,9 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                     $order->setStatus(Order::STATE_PROCESSING, true);
                     
                 } else if($code == 3){
+                    if($order->getState() == "canceled"  ){
+                        $this->uploadInventory($orderId,$x_extra4);
+                    }
                     $order->setState($pendingOrderState, true);
                     $order->setStatus($pendingOrderState, true);
                 } else if($code == 2 ||
