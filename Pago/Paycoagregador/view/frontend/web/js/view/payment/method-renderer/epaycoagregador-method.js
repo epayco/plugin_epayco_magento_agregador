@@ -122,7 +122,8 @@ define(
 
                        if(invoice){
                            var order_data_product = JSON.stringify(productData);
-                           if(window.checkoutConfig.payment.epaycoagregador.payco_test == "1"){
+                           if(window.checkoutConfig.payment.epaycoagregador.payco_test == "1"
+                            || window.checkoutConfig.payment.epaycoagregador.payco_test == "true"){
                                window.checkoutConfig.payment.epaycoagregador.payco_test= "true";
                                var test2 = true;
                            } else {
