@@ -15,7 +15,7 @@ define(
         'Magento_Checkout/js/model/url-builder',
         'Magento_Customer/js/model/customer',
         'Magento_Checkout/js/model/place-order',
-        'https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod.js?version=1643645084821'
+        'https://checkout.epayco.co/checkout.js'
     ],
     function ($,Component,url,quote,checkoutData,messageContainer, urlBuilder, customer, placeOrderService) {
         'use strict';
