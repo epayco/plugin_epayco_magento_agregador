@@ -193,15 +193,7 @@ define(
                                     localStorage.setItem("invoicePaymentAgregador", invoice);
                                     _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                                 }else{
-                                    if(localStorage.getItem("sessionPaymentAgregador") == null){
-                                        _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
-                                    }else{
-                                        const handlerNew = ePayco.checkout.configure({
-                                            sessionId: localStorage.getItem("sessionPaymentAgregador"),
-                                            external: data.external == 'true' ? true: false,
-                                        });
-                                        handlerNew.openNew()
-                                    }
+                                    _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                                 }
                             }
                        }
