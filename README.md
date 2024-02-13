@@ -7,6 +7,7 @@ Este plugin permite integrar ePayco como medio de pago para sus diferentes tiend
 ## Versiones
 * [ePayco plugin Magento Agregador v2.0.x](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.0.0).
 * [ePayco plugin Magento Agregador v2.7.0](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.7.0).
+* [ePayco plugin Magento Agregador v2.8.0](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.8.0).
 
 ## Iniciando
 
