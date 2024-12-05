@@ -193,8 +193,8 @@ define(
                                mobilephone_billing: mobile,
                                number_doc_billing: doc,
                                autoclick: "true",
-                               //ip: ip,
-                               //test: test2.toString()
+                               ip: ip,
+                               test: test2.toString()
                            };
 
                            button0.disabled = false;
@@ -203,13 +203,7 @@ define(
                            button1.style.disabled = false;
                             const apiKey = window.checkoutConfig.payment.epaycoagregador.payco_public_key;
                             const privateKey = window.checkoutConfig.payment.epaycoagregador.payco_private_key;
-                            var handler = ePayco.checkout.configure({
-                                key: apiKey,
-                                test:test2
-                            })
-                            fullScreenLoader.stopLoader();
-                            handler.open(data);
-                            /*if(localStorage.getItem("invoicePayment") == null){
+                            if(localStorage.getItem("invoicePayment") == null){
                                 localStorage.setItem("invoicePayment", invoice);
                                 _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                             }else{
@@ -220,7 +214,7 @@ define(
                                 }else{
                                     _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                                 }
-                            }*/
+                            }
                        }
                     },
                     error :function(error){
@@ -275,7 +269,7 @@ define(
                 headers['privatekey'] = privatekey;
                 headers['apikey'] = apikey;
                 var payment =   function (){
-                    return  fetch("https://cms.epayco.io/checkout/payment/session", {
+                    return  fetch("https://cms.epayco.co/checkout/payment/session", {
                         method: 'POST',
                         body: JSON.stringify(info),
                         headers
