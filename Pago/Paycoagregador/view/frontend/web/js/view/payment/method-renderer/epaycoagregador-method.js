@@ -207,9 +207,9 @@ define(
                                 key: apiKey,
                                 test:test2
                             })
-                            fullScreenLoader.stopLoader();
-                            handler.open(data);
-                            /*if(localStorage.getItem("invoicePayment") == null){
+                            //fullScreenLoader.stopLoader();
+                            //handler.open(data);
+                            if(localStorage.getItem("invoicePayment") == null){
                                 localStorage.setItem("invoicePayment", invoice);
                                 _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                             }else{
@@ -220,7 +220,7 @@ define(
                                 }else{
                                     _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
                                 }
-                            }*/
+                            }
                        }
                     },
                     error :function(error){
