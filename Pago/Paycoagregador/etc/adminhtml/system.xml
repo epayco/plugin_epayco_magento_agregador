@@ -49,6 +49,10 @@
                     <comment>(Onpage Checkout, el usuario a pagar permanece en el sitio) o (Standart Checkout, el usuario a pagar se redirige a la puerta de enlace de ePayco)</comment>
                     <source_model>Pago\Paycoagregador\Model\Config\Source\Helper\Vertical</source_model>
                 </field>
+                <field id="language_cs" translate="label" type="select" sortOrder="95" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Lenguage de Checkout</label>
+                    <source_model>Pago\Paycoagregador\Model\Config\Source\Helper\Language</source_model>
+                </field>
                 <field id="order_status" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
                     <label>New Order Status</label>
                     <source_model>Magento\Sales\Model\Config\Source\Order\Status\NewStatus</source_model>
