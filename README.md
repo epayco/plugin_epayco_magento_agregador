@@ -41,6 +41,10 @@ php bin/magento setup:di:compile
 ```
 php bin/magento module:status
 ```
+5- Si desea configurar el cron de actualización de ordenes ejecuta el siguiente comando
+```
+php bin/magento cron:run
+```
 
 ## Finalización
 

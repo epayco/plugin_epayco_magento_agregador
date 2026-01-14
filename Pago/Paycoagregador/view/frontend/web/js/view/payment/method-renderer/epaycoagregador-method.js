@@ -15,7 +15,7 @@ define(
         'Magento_Checkout/js/model/url-builder',
         'Magento_Customer/js/model/customer',
         'Magento_Checkout/js/model/place-order',
-        'https://checkout.epayco.co/checkout.js',
+        'https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod-v2.js',
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/modal/alert',
     ],
@@ -28,229 +28,163 @@ define(
             },
             redirectAfterPlaceOrder: false,
             renderCheckout: function() {
-                fullScreenLoader.startLoader();
-                //$('#loader-agregador').trigger('processStart');
-                var button0 = document.getElementsByClassName('action primary checkout')[0];
-                var button1 = document.getElementsByClassName('action primary checkout')[1];
-                button0.style.disabled = true;
-                button1.style.disabled = true;
-                button0.disabled = true;
-                button1.disabled = true;
-                var countryBllg = quote.shippingAddress();
-                var customerData = checkoutData.getShippingAddressFromData();
-                var paymentData = {
-                    method: 'epaycoagregador'
-                };
-                var serviceUrl, payload;
-                payload = {
-                    cartId: quote.getQuoteId(),
-                    billingAddress: quote.billingAddress(),
-                    paymentMethod: paymentData
-                };
-                   var docType='';
-                   var mobile = '';
-                   var doc= '';
-                   var country = '';
-                   var email = '';
-                   var name_billing = '';
-                   var address_billing = '';
+                try {
+                    fullScreenLoader.startLoader();
+                    var getQuoteId = this.getQuoteId();
+                    var _this = this;
 
-                if (customer.isLoggedIn()) {
-                    serviceUrl = urlBuilder.createUrl('/carts/mine/payment-information', {});
-                    email = customer.customerData.email;
-                    //mobile = customer.customerData.addresses[0].telephone;
-                    mobile = '';
-                    name_billing =  customer.customerData.firstname + ' ' + customer.customerData.lastname;
-                    //address_billing =  customer.customerData.addresses[0].street[0];
-                    //country = customer.customerData.addresses[0].country_id;
-                    } else {
-                    serviceUrl = urlBuilder.createUrl('/guest-carts/:quoteId/payment-information', {
-                        quoteId: quote.getQuoteId()
-                    });
-                    payload.email = quote.guestEmail;
-                     email = quote.guestEmail;
-                     mobile = '';
-                    name_billing = quote.billingAddress().firstname + ' '+ quote.billingAddress().lastname;
-                    address_billing = quote.billingAddress().street[0];
-                    country = quote.billingAddress().countryId;
-                }
-                // placeOrderService(serviceUrl, payload, messageContainer);
-                var orderId = this.getOrderId();
-                var getQuoteIncrement = this.getQuoteIncrementId();
-                var totals = quote.getTotals();
-                var quoteIdData = this.getQuoteIdData();
-                var ip =  this.getCustomerIp();
-                var _this =  this;
-                var invoice;
-                var settings = {
-                    "url": url.build("responseAgregador/paymentagregador/index"),
-                    "method": "POST",
-                    "timeout": 120,
-                    "async":false,
-                    "headers": {
-                        "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/x-www-form-urlencoded",
-                    },
-                    "data": {
-                        "order_id": quoteIdData
-                    }
-                }
-                  $.ajax({
-                    url: url.build("responseAgregador/paymentagregador/index"),
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    method: 'POST',
-                    async: false,
-                    data:  {
-                        "order_id": quoteIdData
-                    },
-                    success: function(data){
-
-                        console.log('processing...');
-                        if(data == "warning" || data.length == 0 || data == "error" ) {
-                            $.ajax(settings).done(function (response) {
-                                if( response.increment_id){
-                                    invoice = response.increment_id;
+                    if (getQuoteId) {
+                        var storedQuoteId = localStorage.getItem("epaycoagregador_quote_id");
+                        if (storedQuoteId == getQuoteId) {
+                            localStorage.setItem("epaycoagregador_quote_id", getQuoteId);
+                            var data = localStorage.getItem("epaycoagregador_invoice");
+                            if (data) {
+                                _this.onEpaycoSuccess(data, _this, getQuoteId);
+                            } else {
+                                fullScreenLoader.stopLoader();
+                                alert({
+                                    content: $.mage.__('Sorry, something went wrong. Please try again later.')
+                                });
+                            }
+                        } else {
+                            $.ajax({
+                                url: url.build("responseAgregador/paymentagregador/index"),
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                method: 'POST',
+                                async: false,
+                                data:  { "order_id": getQuoteId },
+                                success: function(data) {
+                                    _this.onEpaycoSuccess(data, _this, getQuoteId);
+                                },
+                                error: function(error) {
+                                    fullScreenLoader.stopLoader();
+                                    alert({
+                                        content: $.mage.__('Sorry, something went wrong. Please try again later.')
+                                    });
+                                    console.log('error: ' + error);
                                 }
                             });
-                        }else{
-                            invoice = data.increment_id;
                         }
-
-                       if(invoice){
-                           if(window.checkoutConfig.payment.epaycoagregador.payco_test == "1"){
-                               window.checkoutConfig.payment.epaycoagregador.payco_test= "true";
-                               var test2 = true;
-                           } else {
-                               window.checkoutConfig.payment.epaycoagregador.payco_test = "false";
-                               var test2 = false;
-                           }
-                           var handler = window.ePayco.checkout.configure({
-                               key: window.checkoutConfig.payment.epaycoagregador.payco_public_key,
-                               test:test2
-                           })
-                           var items = '';
-                           for(var i = 0; i <  window.checkoutConfig.quoteItemData.length; i++){
-                               if(window.checkoutConfig.totalsData.items.length==1){
-                                   items=window.checkoutConfig.quoteItemData[i].product.name;
-                               }else{
-                                   items += window.checkoutConfig.quoteItemData[i].product.name+',';
-                               }
-
-                           }
-    
-                           // fin calcular base iva
-                           if(!window.checkoutConfig.isCustomerLoggedIn){
-                               if(customerData){
-                                   name_billing =  customerData.firstname + ' ' + customerData.lastname;
-                                   address_billing =  customerData.street[0]+ ' ' + customerData.street[1];
-                                   country = customerData.country_id;
-                               }else{
-                                   country = 'CO';
-                               }
-                           } else {
-                               name_billing = window.checkoutConfig.customerData.firstname + ' '+ window.checkoutConfig.customerData.lastname;
-                               mobile = countryBllg.telephone;
-                               address_billing = countryBllg.street[0];
-                               country = countryBllg.countryId;
-                           }
-                           var lang = '';
-                           var temp = window.checkoutConfig.payment.epaycoagregador.language.split("_");
-                           lang = temp[0];
-
-                           var amount = 0;
-                           amount = totals._latestValue.base_grand_total;
-                           var taxes = 0;
-                           taxes = totals._latestValue.base_tax_amount;
-                           var tax_base = 0;
-                           tax_base = amount - taxes;
-                           parseFloat(tax_base);
-                           var data={
-                               //Parametros compra (obligatorio)
-                               name: items,
-                               description: items,
-                               invoice: invoice,
-                               currency: window.checkoutConfig.quoteData.store_currency_code,
-                               amount: amount.toString(),
-                               tax_base: tax_base.toString(),
-                               tax: taxes.toString(),
-                               country: country,
-                               lang: lang,
-                               //Onpage='false' - Standard='true'
-                               external: window.checkoutConfig.payment.epaycoagregador.vertical_cs,
-                               //Atributos opcionales
-                               extra1: orderId,
-                               extra2: invoice,
-                               confirmation:url.build("confirmationAgregador/epaycoagregador/index"),
-                               response: url.build("confirmationAgregador/epaycoagregador/index"),
-                               //Atributos clienteng:
-                               email_billing:email,
-                               name_billing: name_billing,
-                               address_billing: address_billing,
-                               type_doc_billing: docType,
-                               mobilephone_billing: mobile,
-                               number_doc_billing: doc,
-                               autoclick: "true",
-                               //ip: ip,
-                               //test: test2.toString()
-                           };
-
-                           button0.disabled = false;
-                           button1.disabled = false;
-                           button0.style.disabled = false;
-                           button1.style.disabled = false;
-                            const apiKey = window.checkoutConfig.payment.epaycoagregador.payco_public_key;
-                            const privateKey = window.checkoutConfig.payment.epaycoagregador.payco_private_key;
-                            var handler = ePayco.checkout.configure({
-                                key: apiKey,
-                                test:test2
-                            })
-                            fullScreenLoader.stopLoader();
-                            handler.open(data);
-                            /*if(localStorage.getItem("invoicePayment") == null){
-                                localStorage.setItem("invoicePayment", invoice);
-                                _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
-                            }else{
-                                if(localStorage.getItem("invoicePayment") != invoice){
-                                    localStorage.removeItem("invoicePayment");
-                                    localStorage.setItem("invoicePayment", invoice);
-                                    _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
-                                }else{
-                                    _this.makePayment(privateKey,apiKey,data, data.external == 'true'?true:false)
-                                }
-                            }*/
-                       }
-                    },
-                    error :function(error){
-                        //$('body').trigger('processStop');
+                    } else {
                         fullScreenLoader.stopLoader();
                         alert({
                             content: $.mage.__('Sorry, something went wrong. Please try again later.')
                         });
-                        console.log('error: '+error);
                     }
-                });
-
+                } catch (error) {
+                    fullScreenLoader.stopLoader();
+                    alert({
+                        content: $.mage.__('Sorry, something went wrong. Please try again later.')
+                    });
+                    console.log('error: ' + error);
+                }
             },
-            getOrderId: function(){
-                return window.checkoutConfig.payment.epaycoagregador.getOrderId;
+            onEpaycoSuccess: function(data, _this, getQuoteId){
+                //$('#loader-agregador').trigger('processStart');
+                if(data.success){
+                    var ip = this.getCustomerIp();
+                    var checkoutConfig= window.checkoutConfig;
+                    let stringNumber = "000000000";
+                    let increment_id = data.increment_id;
+                    let number = parseInt(stringNumber, 10);
+                    let result = number + data.order_id;
+                    //let invoice = result.toString().padStart(9, '0');
+                    let invoice = increment_id;
+                    localStorage.setItem("epaycoagregador_invoice", JSON.stringify(data));
+                    var shippingAddress = quote.shippingAddress();
+                    var billingAddress = quote.billingAddress();
+                    var docType='';
+                    var mobile = shippingAddress.telephone??billingAddress.telephone;
+                    var doc= '';
+                    var country = shippingAddress.countryId??billingAddress.countryId;
+                    var email = quote.guestEmail;
+                    var name_billing = shippingAddress.firstname??billingAddress.firstname+" "+shippingAddress.lastname??billingAddress.lastname;
+                    var address_billing = shippingAddress.street[0]??billingAddress.street[0];
+                    var currency = checkoutConfig.quoteData.store_currency_code;
+                    var totals = quote.getTotals();
+                    var amount = 0;
+                    amount = totals._latestValue.base_grand_total;
+                    var taxes = 0;
+                    taxes = totals._latestValue.base_tax_amount;
+                    var tax_base = 0;
+                    tax_base = amount - taxes;
+                    var items = '';
+                    var test = false;
+                    for(var i = 0; i < window.checkoutConfig.quoteItemData.length; i++){
+                        if(window.checkoutConfig.totalsData.items.length==1){
+                            items=window.checkoutConfig.quoteItemData[i].product.name;
+                        }else{
+                            items += window.checkoutConfig.quoteItemData[i].product.name+',';
+                        }
+                    }
+                    if(window.checkoutConfig.payment.epaycoagregador.payco_test === "1"){
+                        var test = true;
+                    }
+                    let typeCheckout = window.checkoutConfig.payment.epaycoagregador.vertical_cs === 'true' ? 'standard' : 'onepage';
+                    var lang = checkoutConfig.payment.epaycoagregador.language_cs;
+                    //let date_ = new Date().getTime();
+                    var data={
+                        //Parametros compra (obligatorio)
+                        name: items,
+                        description: items,
+                        invoice: invoice,
+                        currency: currency,
+                        amount: parseFloat(amount),
+                        taxBase: parseFloat(tax_base),
+                        tax: parseFloat(taxes),
+                        country: country,
+                        lang: lang,
+                        extras:{
+                            extra1: data.order_id,
+                            extra2: getQuoteId
+                        },
+                        confirmation:url.build("confirmationAgregador/epaycoagregador/index"),
+                        response: url.build("confirmationAgregador/epaycoagregador/index"),
+                        forceResponse:false,//no mostrar el detalle de la transaccion
+                        noRedirectOnClose: false,
+                        uniqueTransactionPerBill:false,
+                        //Atributos cliente
+                        billing:{
+                            email: email,
+                            name: name_billing,
+                            address: address_billing,
+                            mobilePhone: mobile,
+                            typeDoc: docType,
+                            numberDoc: doc,
+                        },
+                        method: "POST",
+                        autoClick:true,
+                        ip: ip,
+                        test: test,
+                        checkout_version:"2",
+                        extrasEpayco:{
+                            extra5:"P26"
+                        }
+                    };
+                    const apiKey = window.checkoutConfig.payment.epaycoagregador.payco_public_key.trim();
+                    const privateKey = window.checkoutConfig.payment.epaycoagregador.payco_private_key.trim();
+                    _this.makePayment(privateKey,apiKey,data, typeCheckout, test)
+                }else{
+                    fullScreenLoader.stopLoader();
+                    alert({
+                        content: $.mage.__('Sorry, something went wrong. Please try again later.')
+                    });
+                }
+            },
+            getCode: function() {
+                return 'epaycoagregador';
             },
             getQuoteData: function(){
                 return window.checkoutConfig.payment.epaycoagregador.getQuoteData;
             },
-            getStoreData: function(){
-                return window.checkoutConfig.payment.epaycoagregador.getStoreData;
-            },
-            getOrderIncrementId: function(){
-                return window.checkoutConfig.payment.epaycoagregador.getOrderIncrementId;
-            },
-            getQuoteIncrementId: function(){
-                return window.checkoutConfig.payment.epaycoagregador.getQuoteIncrementId;
-            },
             getQuoteIdData: function(){
                 return window.checkoutConfig.payment.epaycoagregador.getQuoteIdData;
+            },
+            getQuoteId: function(){
+                return window.checkoutConfig.payment.epaycoagregador.getQuoteId;
             },
             getdisplayTitle: function () {
                 return window.checkoutConfig.payment.epaycoagregador.payco_title;
@@ -258,54 +192,92 @@ define(
             text: function(){
                 return window.checkoutConfig.payment.epaycoagregador.text;
             },
-            getMailingAddress: function() {
-                return window.checkoutConfig.payment.checkmo.mailingAddress;
-            },
-            responseAction: function(){
-                return window.checkoutConfig.payment.epaycoagregador.responseAction;
-            },
             getCustomerIp: function(){
                 return window.checkoutConfig.payment.epaycoagregador.getCustomerIp;
             },
-            afterPlaceOrder: function () {
-                this.renderCheckout();
+            loadScript: function (url,callback){
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = url;
+                script.onload = function() {
+                    if (callback) {
+                        callback();
+                    }
+                };
+                script.onerror = function() {
+                    console.error('Error loading script:', url);
+                };
+                document.head.appendChild(script);
             },
-            makePayment:  function (privatekey, apikey, info, external) {
-                const headers = { 'Content-Type': 'application/json' } ;
-                headers['privatekey'] = privatekey;
-                headers['apikey'] = apikey;
-                var payment =   function (){
-                    return  fetch("https://cms.epayco.io/checkout/payment/session", {
-                        method: 'POST',
+            makePayment:  function (privatekey, apikey, info, external, test) {
+                const _this = this;
+                const headers = { "Content-Type": "application/json" };
+                const payment = function () {
+                    return fetch("https://eks-apify-service.epayco.io/payment/session/create", {
+                        method: "POST",
                         body: JSON.stringify(info),
                         headers
                     })
-                        .then(res =>  res.json())
-                        .catch(err => err);
-                }
-                payment()
+                    .then(res => res.json());
+                };
+                return _this.getBearerToken(privatekey, apikey)
+                    .then(token => {
+                        headers["Authorization"] = "Bearer " + token;
+                        return payment();
+                    })
                     .then(session => {
-                        if(session.data.sessionId != undefined){
-                            localStorage.removeItem("sessionPayment");
-                            localStorage.setItem("sessionPayment", session.data.sessionId);
+                        if (session.data && session.data.sessionId) {
+                            localStorage.removeItem("sessionPaymentAgregador");
+                            localStorage.setItem("sessionPaymentAgregador", session.data.sessionId);
                             const handlerNew = window.ePayco.checkout.configure({
                                 sessionId: session.data.sessionId,
-                                external: external,
+                                type: external,
+                                test: test,
                             });
-                            //$('body').trigger('processStop');
-                            //$('#loader-agregador').trigger('processStop');
                             fullScreenLoader.stopLoader();
-                            handlerNew.openNew()
+                            handlerNew.open();
+                        } else {
+                            fullScreenLoader.stopLoader();
+                            alert({
+                                content: $.mage.__('Sorry, something went wrong. Please try again later.')
+                            });
                         }
                     })
                     .catch(error => {
+                        console.error(error);
                         fullScreenLoader.stopLoader();
                         alert({
                             content: $.mage.__('Sorry, something went wrong. Please try again later.')
                         });
-                        error.message;
                     });
-            }
+            },
+            getBearerToken: function (priv,pub) {
+                const cacheKey = 'epaycoBearer';
+                const expKey = cacheKey + ':exp';
+                const cached = localStorage.getItem(cacheKey);
+                const exp = parseInt(localStorage.getItem(expKey) || '0', 10);
+                if (cached && Date.now() < exp) return Promise.resolve(cached);
+
+                return fetch("https://eks-apify-service.epayco.io/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Basic " + btoa(`${pub}:${priv}`)
+                    }
+                })
+                .then(r => r.json())
+                .then(json => {
+                    const token = json.token || json.access_token;
+                    if (!token) throw new Error("No se recibió token");
+                    const ttlMs = (14 * 60 * 1000) - 15000;
+                    localStorage.setItem(cacheKey, token);
+                    localStorage.setItem(expKey, String(Date.now() + ttlMs));
+                    return token;
+                });
+            },
+            afterPlaceOrder: function () {
+                this.renderCheckout();
+            },
         });
     }
 );
