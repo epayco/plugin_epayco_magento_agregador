@@ -15,7 +15,7 @@ define(
         'Magento_Checkout/js/model/url-builder',
         'Magento_Customer/js/model/customer',
         'Magento_Checkout/js/model/place-order',
-        'https://epayco-checkout-testing.s3.amazonaws.com/checkout.preprod-v2.js',
+        'https://checkout.epayco.co/checkout-v2.js',
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/modal/alert',
     ],
@@ -85,7 +85,7 @@ define(
             onEpaycoSuccess: function(data, _this, getQuoteId){
                 //$('#loader-agregador').trigger('processStart');
                 if(data.success){
-                    var ip = this.getCustomerIp();
+                    //var ip = this.getCustomerIp();
                     var checkoutConfig= window.checkoutConfig;
                     let stringNumber = "000000000";
                     let increment_id = data.increment_id;
@@ -126,10 +126,11 @@ define(
                     let typeCheckout = window.checkoutConfig.payment.epaycoagregador.vertical_cs === 'true' ? 'standard' : 'onepage';
                     var lang = checkoutConfig.payment.epaycoagregador.language_cs;
                     //let date_ = new Date().getTime();
+                    let description_ = items = items.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ ,.-]/g, '').substring(0, 240);
                     var data={
                         //Parametros compra (obligatorio)
-                        name: items,
-                        description: items,
+                        name: description_,
+                        description: description_,
                         invoice: invoice,
                         currency: currency,
                         amount: parseFloat(amount),
@@ -157,7 +158,7 @@ define(
                         },
                         method: "POST",
                         autoClick:true,
-                        ip: ip,
+                        //ip: ip,
                         test: test,
                         checkout_version:"2",
                         extrasEpayco:{
@@ -213,7 +214,7 @@ define(
                 const _this = this;
                 const headers = { "Content-Type": "application/json" };
                 const payment = function () {
-                    return fetch("https://eks-apify-service.epayco.io/payment/session/create", {
+                    return fetch("https://apify.epayco.co/payment/session/create", {
                         method: "POST",
                         body: JSON.stringify(info),
                         headers
@@ -258,7 +259,7 @@ define(
                 const exp = parseInt(localStorage.getItem(expKey) || '0', 10);
                 if (cached && Date.now() < exp) return Promise.resolve(cached);
 
-                return fetch("https://eks-apify-service.epayco.io/login", {
+                return fetch("https://apify.epayco.co/login", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
