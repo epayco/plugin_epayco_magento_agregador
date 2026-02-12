@@ -20,80 +20,110 @@
  */
 
 namespace Pago\Paycoagregador\Controller\Paymentagregador;
-use Magento\Sales\Model\Order;
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\View\Result\PageFactory;
+use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Store\Model\ScopeInterface;
 
-class Index extends \Magento\Framework\App\Action\Action
+class Index extends Action implements CsrfAwareActionInterface
 {
     protected $resultPageFactory;
     protected $resultJsonFactory;
-    protected $checkoutSession;
-    protected $orderFactory;
-    protected $cartManagement;
-    protected $quote;
-    protected $resultRedirect;
-    protected $_curl;
+    protected $orderRepository;
 
-    /**
-     * Constructor
-     *
-     * @param \Magento\Framework\App\Action\Context  $context
-     * @param \Magento\Framework\Json\Helper\Data $jsonHelper
-     */
     public function __construct(
-        \Magento\Framework\App\Action\Context $context,
-        \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory,
-        \Magento\Checkout\Model\Session $checkoutSession,
-        \Magento\Sales\Model\OrderFactory $orderFactory,
-        \Magento\Quote\Api\CartManagementInterface $cartManagement,
-        \Magento\Quote\Model\Quote $quote,
-        \Magento\Framework\HTTP\Client\Curl $curl,
-        \Magento\Framework\App\Helper\Context $contextApp,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Pago\Paycoagregador\Controller\PaymentController $payment_controller,
-        \Magento\Sales\Api\OrderRepositoryInterface $orderRepository
+        Context $context,
+        PageFactory $resultPageFactory,
+        JsonFactory $resultJsonFactory,
+        OrderRepositoryInterface $orderRepository
     ) {
         $this->resultPageFactory = $resultPageFactory;
         $this->resultJsonFactory = $resultJsonFactory;
-        $this->checkoutSession = $checkoutSession;
-        $this->orderFactory = $orderFactory;
-        $this->cartManagement = $cartManagement;
-        $this->quote = $quote;
-        $this->_curl = $curl;
-        $this->contextApp = $contextApp;
-        $this->scopeConfig = $scopeConfig;
-        $this->paymentController = $payment_controller;
         $this->orderRepository = $orderRepository;
         parent::__construct($context);
     }
 
-    /**
-     * Execute view action
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
-     */
+    public function createCsrfValidationException(RequestInterface $request): ? InvalidRequestException
+    {
+        return null;
+    }
+
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
+    }
+
     public function execute()
     {
-        $result = $this->resultJsonFactory->create();
-        $orderId = $_REQUEST['order_id'];
-
-        if(isset($orderId)){
+        try {
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $logger = $objectManager->create(\Psr\Log\LoggerInterface::class);
+            $result = $this->resultJsonFactory->create();
+            $orderEpayco =  $objectManager->create(\Pago\Paycoagregador\Model\OrderEpaycoAgregador::class);
+            $storeScope = ScopeInterface::SCOPE_STORE;
+            $scopeConfig = ObjectManager::getInstance()->get(ScopeConfigInterface::class);
+            $p_cust_id_cliente = $scopeConfig->getValue(
+                'payment/epaycoagregador/payco_merchant',
+                $storeScope
+            );
+            // Get request parameters
+            $request = $this->getRequest();
+            $orderId = $request->getParam('order_id');
+
+            $orderEpayco->setData('order', $orderId);
+            $orderEpayco->setData('retry', 1);
+            $orderEpayco->setData('customer_id', $p_cust_id_cliente);
+            $orderEpayco->setData('status', 'started');
+            $orderEpayco->save();
+            
             $resource = $objectManager->get('Magento\Framework\App\ResourceConnection');
             $connection = $resource->getConnection();
-            $orderId_= $orderId;
-                $sql = "SELECT * FROM sales_order WHERE quote_id = '$orderId_'";
-                $result_ = $connection->fetchAll($sql);
-                if($result_ != null){
-                    return $result->setData($result_[0]);
-                }else{
-                    return $result->setData('warning' );
-                }
+            /** @var \Magento\Sales\Api\OrderRepositoryInterface $orderRepository */
+            $orderRepository = $objectManager->create(\Magento\Sales\Api\OrderRepositoryInterface::class);
+            
+            // Cargar la orden por quote_id y obtener el increment_id
+            $order = $objectManager->create('\Magento\Sales\Model\Order')->loadByAttribute('quote_id', (Integer)$orderId);
+            
+            // Validar que la orden existe
+            if (!$order->getId()) {
+                $logger->error('ePaycoAgregador: Orden no encontrada con quote_id: ' . $orderId);
+                return $result->setData([
+                    'success' => false,
+                    'message' => 'Orden no encontrada',
+                    'order_id' => $orderId
+                ]);
+            }
+            
+            // Obtener el increment_id de la orden
+            $incrementId = $order->getIncrementId();
+            $logger->info('ePayco Agregador: Order ID: ' . $orderId . ', Increment ID: ' . $incrementId . ', Entity ID: ' . $order->getId());
+            // Actualizar el estado y estatus de la orden
+            $order->setState(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
+            $order->setStatus(\Magento\Sales\Model\Order::STATE_PENDING_PAYMENT);
+            $orderRepository->save($order);
 
-        } else {
-                return $result->setData('error');
+            $data = [
+                'success' => true,
+                'message' => 'Custom payment controller works!',
+                'order_id' => $orderId,
+                'increment_id' => $incrementId
+            ];
+            
+            return $result->setData($data);
+        }catch (\Exception $error) {
+            $logger->error('ErrorepaycoAgregadorController: ' . $error->getMessage());
+            die($error->getMessage());
+        } catch (\Error $e) {
+            $logger->error('ErrorepaycoAgregadorController: ' . $e->getMessage());
+            die($e->getMessage());
         }
-
     }
 
 }

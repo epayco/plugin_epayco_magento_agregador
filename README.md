@@ -7,6 +7,7 @@ Este plugin permite integrar ePayco como medio de pago para sus diferentes tiend
 ## Versiones
 * [ePayco plugin Magento agregador v2.0.x](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.0.0).
 * [ePayco plugin Magento agregador v2.7.0](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.7.0).
+* [ePayco plugin Magento agregador v2.7.1](https://github.com/epayco/plugin_epayco_magento_agregador/releases/tag/v2.7.1).
 
 
 ## Iniciando
@@ -40,6 +41,10 @@ php bin/magento setup:di:compile
 4- Si desea puede ejecutar el siguiente comando para verificar que el modulo esté habilitado
 ```
 php bin/magento module:status
+```
+5- Si desea configurar el cron de actualización de ordenes ejecuta el siguiente comando
+```
+php bin/magento cron:run
 ```
 
 ## Finalización
